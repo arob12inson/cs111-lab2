@@ -235,14 +235,13 @@ main (int argc, char *argv[])
     t++;
   }
 
-  // TODO calculate individual wait & response time
+  // calculate individual wait & response time
   for (int i = 0; i < ps.nprocesses; i++){
     p = &ps.process[i];
     p->waiting_time = p->finish_time - p->arrival_time - p->burst_time;
     p->response_time = p->start_exec_time - p->arrival_time;
-    printf("process %ld response time: %ld\n", p->pid, p->response_time);
   }
-  // TODO calculate average wait & response time
+  // calculate average wait & response time
   for (int i = 0; i < ps.nprocesses; i++){
     p = &ps.process[i];
     total_wait_time += p->waiting_time;
