@@ -19,11 +19,11 @@ struct process
   TAILQ_ENTRY (process) pointers;
 
   /* Additional fields here */
-  long remaining_time;
-  long start_exec_time;
-  long waiting_time;
-  long response_time;
-  long finish_time;
+  long remaining_time; // set at initialization, decrement it at wait time
+  long start_exec_time; // set when runs for first time
+  long waiting_time; // Calculate at the end
+  long response_time; // calculate at the end
+  long finish_time; // set when it finishes
   /* End of "Additional fields here" */
 };
 
@@ -188,6 +188,8 @@ main (int argc, char *argv[])
   struct process* p = NULL;
   for (int i = 0; i < ps.nprocesses; i++){
     struct process* p = &ps.process[i];
+    p->arrival_time = -1;
+    p->remaining_time = p->burst_time;
     TAILQ_INSERT_TAIL(&list, p, pointers);
   }
   // TODO implement queue like this: put them in order of arrival time to the queue.
@@ -207,23 +209,36 @@ main (int argc, char *argv[])
     // decrement time left of P
     // decrease quantum_left
     // increase time t
+    printf("time: %d\n", t);
+    if (p){
+      printf("pid: %ld\n", p->pid);
+    }
+
     if (p == NULL){
-      p = TAILQ_FIRST(&list);
+      p = TAILQ_FIRST(&list); // does this pop off?
+      TAILQ_REMOVE(&list, p, pointers);
+      if (p->arrival_time == -1){
+        p->arrival_time = t;
+      }
       quantum_left = quantum_length;
-    } else if (p->remaining_time == 0) { // finishing your
+    } else if (p->remaining_time == 0) { // if the process finishes
       p->finish_time = t;
       p = NULL;
-    } else if (quantum_left == 0) { // quantum timed out
-      TAILQ_INSERT_TAIL(&list, p, pointers);
-      p = NULL;
-
+    } else if (quantum_left == 0) { // need a quantum switch
+      // need to handle if queue is is empty
+      if (TAILQ_EMPTY(&list) == false){ // quantum switch only if need to
+        TAILQ_INSERT_TAIL(&list, p, pointers);
+        p = NULL;
+      }
     } else {
       p->remaining_time--;
       quantum_left--;
     }
-
     t++;
   }
+
+  // TODO calculate individual wait & response time
+  // TODO calculate average wait & response time
   /* End of "Your code here" */
 
   printf ("Average wait time: %.2f\n",
