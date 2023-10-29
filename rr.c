@@ -188,7 +188,7 @@ main (int argc, char *argv[])
   struct process* p = NULL;
   for (int i = 0; i < ps.nprocesses; i++){
     struct process* p = &ps.process[i];
-    p->arrival_time = -1;
+    p->start_exec_time = -1;
     p->remaining_time = p->burst_time;
     TAILQ_INSERT_TAIL(&list, p, pointers);
   }
@@ -209,19 +209,17 @@ main (int argc, char *argv[])
     // decrement time left of P
     // decrease quantum_left
     // increase time t
-    printf("time: %d\n", t);
-    if (p){
-      printf("pid: %ld\n", p->pid);
-    }
 
     if (p == NULL){
       p = TAILQ_FIRST(&list); // does this pop off?
       TAILQ_REMOVE(&list, p, pointers);
-      if (p->arrival_time == -1){
-        p->arrival_time = t;
+      if (p->start_exec_time == -1){
+        p->start_exec_time = t;
       }
       quantum_left = quantum_length;
-    } else if (p->remaining_time == 0) { // if the process finishes
+    }
+
+    if (p->remaining_time == 0) { // if the process finishes
       p->finish_time = t;
       p = NULL;
     } else if (quantum_left == 0) { // need a quantum switch
@@ -238,7 +236,18 @@ main (int argc, char *argv[])
   }
 
   // TODO calculate individual wait & response time
+  for (int i = 0; i < ps.nprocesses; i++){
+    p = &ps.process[i];
+    p->waiting_time = p->finish_time - p->arrival_time - p->burst_time;
+    p->response_time = p->start_exec_time - p->arrival_time;
+    printf("process %ld response time: %ld\n", p->pid, p->response_time);
+  }
   // TODO calculate average wait & response time
+  for (int i = 0; i < ps.nprocesses; i++){
+    p = &ps.process[i];
+    total_wait_time += p->waiting_time;
+    total_response_time += p->response_time;
+  }
   /* End of "Your code here" */
 
   printf ("Average wait time: %.2f\n",
