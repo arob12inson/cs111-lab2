@@ -184,20 +184,12 @@ main (int argc, char *argv[])
   long total_response_time = 0;
 
   /* Your code here */
-  int first_arrival_time = ps.process[0].arrival_time;
-  int first_process_pid = ps.process[0].pid;
-  // find when a process first arrives
+  // Key Assumption: Everything has already arrived
+  struct process* p = NULL;
   for (int i = 0; i < ps.nprocesses; i++){
-    if (ps.process[i].arrival_time < first_arrival_time){
-      first_arrival_time = ps.process[i].arrival_time;
-      int first_process_pid = ps.process[0].pid;
-      }
+    struct process* p = &ps.process[i];
+    TAILQ_INSERT_TAIL(&list, p, pointers);
   }
-
-  // time should start when a process comes, put it on the queue
-  int t = first_arrival_time;
-  struct process* p = &ps.process[first_process_pid];
-  TAILQ_INSERT_TAIL(&list, p, pointers);
   // TODO implement queue like this: put them in order of arrival time to the queue.
   // if the time is equal to the arrival time, pop it off and move it to the back
   // TODO Problem: implementation only adds to queue when needing to switch, what if something
@@ -208,13 +200,13 @@ main (int argc, char *argv[])
   //
   // TODO Init the added variables
 
-  p = NULL;
+  int t = 0;
+  p = NULL; // p represents current process running on CPU,
   int quantum_left = -1;
-  while (TAILQ_EMPTY(&list) == false || p != NULL){ // while theres still something left to process
+  while (TAILQ_EMPTY(&list) == false || p != NULL){ // while theres still something left to process (in queue or CPU)
     // decrement time left of P
     // decrease quantum_left
     // increase time t
-    // TODO Assumption: queue is filled already
     if (p == NULL){
       p = TAILQ_FIRST(&list);
       quantum_left = quantum_length;
