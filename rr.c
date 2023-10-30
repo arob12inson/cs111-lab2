@@ -243,6 +243,11 @@ main (int argc, char *argv[])
         TAILQ_INSERT_TAIL(&list, p, pointers);
         p = NULL;
       } // TODO Handle case where it doesn't need to switch (reset quantum)
+      else {
+        quantum_left = quantum_length;
+        p->remaining_time--;
+        quantum_left--;
+      }
     } else {
       p->remaining_time--;
       quantum_left--;
