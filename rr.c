@@ -266,7 +266,6 @@ main (int argc, char *argv[])
     p = &ps.process[i];
     p->waiting_time = p->finish_time - p->arrival_time - p->burst_time;
     p->response_time = p->start_exec_time - p->arrival_time;
-    printf("waiting: %ld \t response: %ld\n", p->waiting_time, p->response_time);
   }
   // calculate average wait & response time
   for (int i = 0; i < ps.nprocesses; i++){
