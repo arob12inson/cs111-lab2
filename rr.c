@@ -159,6 +159,64 @@ init_processes (char const *filename)
   return (struct process_set) {nprocesses, process};
 }
 
+int compareLongs(const void *a, const void *b) {
+    long longA = *((long *)a);
+    long longB = *((long *)b);
+
+    if (longA < longB) return -1;
+    if (longA > longB) return 1;
+    return 0;
+}
+
+long calculateMedian(long* array, int size){
+  qsort(array, size, sizeof(long), compareLongs);
+  if (size % 2 == 1) {
+      // Odd number of elements, median is the middle element
+      return array[size / 2];
+  } else {
+      // Even number of elements, calculate the average of the two middle elements
+      long middle1 = array[(size - 1) / 2];
+      long middle2 = array[size / 2];
+
+      // Check if rounding to the nearest even number is needed
+      if ((middle1 + middle2) % 2 == 0) {
+          return (middle1 + middle2) / 2;
+      } else {
+          return (middle1 + middle2 + 1) / 2;
+      }
+  }
+}
+
+int calculateQuantum(bool medianMode, struct process_list* l, struct process* working_process, int qSize){
+  if (medianMode == false) {
+    return qSize;
+  }
+
+  long num_queued = !(!working_process);
+  struct process* p = NULL;
+
+  TAILQ_FOREACH(p, l, pointers){
+    num_queued ++;
+  }
+  long* x = (long*) malloc(num_queued*sizeof(long));
+  int counter = 0;
+  if (!(!working_process) == true){
+    p = working_process;
+    x[counter] = p->burst_time - p->remaining_time;
+    counter++;
+  }
+  TAILQ_FOREACH(p, l, pointers){
+    x[counter] = p->burst_time - p->remaining_time;
+    counter++;
+  }
+  long m = calculateMedian(x, counter);
+
+  if (!m){
+    m = 1;
+  }
+  return m;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -190,7 +248,6 @@ main (int argc, char *argv[])
     struct process* p = &ps.process[i];
     p->start_exec_time = -1;
     p->remaining_time = p->burst_time;
-    /* TAILQ_INSERT_TAIL(&list, p, pointers); */
   }
 
   int t = 0;
@@ -198,6 +255,10 @@ main (int argc, char *argv[])
   struct process* arriving_process = NULL;
   int num_arrived = 0;
   int quantum_left = -1;
+  int median_mode = quantum_length == -1 ? true : false;
+  if (median_mode == true){
+    quantum_length = 1;
+  }
 
   while (TAILQ_EMPTY(&list) == false || p != NULL || num_arrived < ps.nprocesses){ // while theres still something left to process (in queue or CPU)
     int num_processes_arrived = 0;
@@ -225,6 +286,7 @@ main (int argc, char *argv[])
     }
 
     if (p == NULL){
+      calculateQuantum(median_mode, &list, p, quantum_length);
       p = TAILQ_FIRST(&list); // does this pop off?
       TAILQ_REMOVE(&list, p, pointers);
       if (p->start_exec_time == -1){
@@ -242,8 +304,9 @@ main (int argc, char *argv[])
         // seperate the last num_processes_arrived, then put them back in
         TAILQ_INSERT_TAIL(&list, p, pointers);
         p = NULL;
-      } // TODO Handle case where it doesn't need to switch (reset quantum)
-      else {
+      }
+      else { // schedules a quantum
+        calculateQuantum(median_mode, &list, p, quantum_length);
         quantum_left = quantum_length;
         p->remaining_time--;
         quantum_left--;
