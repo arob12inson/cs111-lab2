@@ -192,15 +192,6 @@ main (int argc, char *argv[])
     p->remaining_time = p->burst_time;
     /* TAILQ_INSERT_TAIL(&list, p, pointers); */
   }
-  // TODO implement queue like this: put them in order of arrival time to the queue.
-  // if the time is equal to the arrival time, pop it off and move it to the back
-  // TODO Problem: implementation only adds to queue when needing to switch, what if something
-  // arrives in the middle?
-  // possible implementation: arrived boolean, those at front of queue but havent arrived
-  // yet see if the arrival time has come (t > p[arrival time]), if so then add to back before
-  // current process is added to the back. Jank, but it works! (also a little more efficient!)
-  //
-  // TODO Init the added variables
 
   int t = 0;
   p = NULL; // p represents current process running on CPU,
@@ -210,19 +201,20 @@ main (int argc, char *argv[])
 
 
   while (TAILQ_EMPTY(&list) == false || p != NULL || num_arrived < ps.nprocesses){ // while theres still something left to process (in queue or CPU)
-    // decrement time left of P
-    // decrease quantum_left
-    // increase time t
-    /* if (num_arrived < ps.nprocesses){ */
-    /*   for (int i = 0; i < ps.nprocesses; i++) { */
-    /*       arriving_process = &ps.process[i]; */
-    /*       if (arriving_process->arrival_time == t) { */
-    /*           TAILQ_INSERT_TAIL(&list, arriving_process, pointers); */
-    /*           num_arrived++; */
-    /*       } */
-    /*   } */
-    /* } */
+    if (num_arrived < ps.nprocesses){
+      for (int i = 0; i < ps.nprocesses; i++) {
+          arriving_process = &ps.process[i];
+          if (arriving_process->arrival_time == t) {
+              TAILQ_INSERT_TAIL(&list, arriving_process, pointers);
+              num_arrived++;
+          }
+      }
+    }
     //TODO Make sure if queue is empty and not working on anything, don't do anything
+    if (p == NULL && TAILQ_EMPTY(&list) == true){
+      t++;
+      continue;
+    }
     if (p == NULL){
       p = TAILQ_FIRST(&list); // does this pop off?
       TAILQ_REMOVE(&list, p, pointers);
