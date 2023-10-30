@@ -190,7 +190,7 @@ main (int argc, char *argv[])
     struct process* p = &ps.process[i];
     p->start_exec_time = -1;
     p->remaining_time = p->burst_time;
-    TAILQ_INSERT_TAIL(&list, p, pointers);
+    /* TAILQ_INSERT_TAIL(&list, p, pointers); */
   }
   // TODO implement queue like this: put them in order of arrival time to the queue.
   // if the time is equal to the arrival time, pop it off and move it to the back
@@ -204,12 +204,25 @@ main (int argc, char *argv[])
 
   int t = 0;
   p = NULL; // p represents current process running on CPU,
+  struct process* arriving_process = NULL;
+  int num_arrived = 0;
   int quantum_left = -1;
-  while (TAILQ_EMPTY(&list) == false || p != NULL){ // while theres still something left to process (in queue or CPU)
+
+
+  while (TAILQ_EMPTY(&list) == false || p != NULL || num_arrived < ps.nprocesses){ // while theres still something left to process (in queue or CPU)
     // decrement time left of P
     // decrease quantum_left
     // increase time t
-
+    /* if (num_arrived < ps.nprocesses){ */
+    /*   for (int i = 0; i < ps.nprocesses; i++) { */
+    /*       arriving_process = &ps.process[i]; */
+    /*       if (arriving_process->arrival_time == t) { */
+    /*           TAILQ_INSERT_TAIL(&list, arriving_process, pointers); */
+    /*           num_arrived++; */
+    /*       } */
+    /*   } */
+    /* } */
+    //TODO Make sure if queue is empty and not working on anything, don't do anything
     if (p == NULL){
       p = TAILQ_FIRST(&list); // does this pop off?
       TAILQ_REMOVE(&list, p, pointers);
