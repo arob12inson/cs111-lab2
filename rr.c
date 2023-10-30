@@ -199,22 +199,31 @@ main (int argc, char *argv[])
   int num_arrived = 0;
   int quantum_left = -1;
 
-
   while (TAILQ_EMPTY(&list) == false || p != NULL || num_arrived < ps.nprocesses){ // while theres still something left to process (in queue or CPU)
-    if (num_arrived < ps.nprocesses){
-      for (int i = 0; i < ps.nprocesses; i++) {
-          arriving_process = &ps.process[i];
-          if (arriving_process->arrival_time == t) {
-              TAILQ_INSERT_TAIL(&list, arriving_process, pointers);
-              num_arrived++;
-          }
+    int num_processes_arrived = 0;
+    bool arrived_processes_added = false;
+    for (int i = 0; i < ps.nprocesses; i++) {
+      arriving_process = &ps.process[i];
+      if (arriving_process->arrival_time == t) {
+        num_processes_arrived++;
       }
     }
-    //TODO Make sure if queue is empty and not working on anything, don't do anything
-    if (p == NULL && TAILQ_EMPTY(&list) == true){
-      t++;
-      continue;
+
+    if (TAILQ_EMPTY(&list) == true && p == NULL){ //handling if the processor is doing nothing
+      if (num_processes_arrived == 0){
+        t++;
+        continue;
+      }
+      for (int i = 0; i < ps.nprocesses; i++) {
+        arriving_process = &ps.process[i];
+        if (arriving_process->arrival_time == t) {
+          TAILQ_INSERT_TAIL(&list, arriving_process, pointers);
+          num_arrived++;
+        }
+        arrived_processes_added = true;
+      }
     }
+
     if (p == NULL){
       p = TAILQ_FIRST(&list); // does this pop off?
       TAILQ_REMOVE(&list, p, pointers);
@@ -230,14 +239,26 @@ main (int argc, char *argv[])
     } else if (quantum_left == 0) { // need a quantum switch
       // need to handle if queue is is empty
       if (TAILQ_EMPTY(&list) == false){ // quantum switch only if need to
+        // seperate the last num_processes_arrived, then put them back in
         TAILQ_INSERT_TAIL(&list, p, pointers);
         p = NULL;
-      }
+      } // TODO Handle case where it doesn't need to switch (reset quantum)
     } else {
       p->remaining_time--;
       quantum_left--;
     }
+
+    if (arrived_processes_added == false){
+      for (int i = 0; i < ps.nprocesses; i++) {
+        arriving_process = &ps.process[i];
+        if (arriving_process->arrival_time == t) {
+          TAILQ_INSERT_TAIL(&list, arriving_process, pointers);
+          num_arrived++;
+        }
+      }
+    }
     t++;
+
   }
 
   // calculate individual wait & response time
@@ -245,6 +266,7 @@ main (int argc, char *argv[])
     p = &ps.process[i];
     p->waiting_time = p->finish_time - p->arrival_time - p->burst_time;
     p->response_time = p->start_exec_time - p->arrival_time;
+    printf("waiting: %ld \t response: %ld\n", p->waiting_time, p->response_time);
   }
   // calculate average wait & response time
   for (int i = 0; i < ps.nprocesses; i++){
