@@ -187,7 +187,12 @@ long calculateMedian(long* array, int size){
   }
 }
 
-int calculateQuantum(bool medianMode, struct process_list* l, struct process* working_process, int qSize){
+int calculateQuantum(bool medianMode,
+                     struct process_list* l,
+                     struct process* working_process,
+                     long num_processes_arrived,
+                     bool arrived_processes_added,
+                     int qSize){
   if (medianMode == false) {
     return qSize;
   }
@@ -198,8 +203,22 @@ int calculateQuantum(bool medianMode, struct process_list* l, struct process* wo
   TAILQ_FOREACH(p, l, pointers){
     num_queued ++;
   }
+
+  if (num_processes_arrived && !arrived_processes_added) { //processes that arrived should be include in quantum calculation
+    num_queued += num_processes_arrived;
+  }
+
   long* x = (long*) malloc(num_queued*sizeof(long));
+  if (!x){
+    perror("calloc");
+    // note: if you're seeing this, you caught me...
+    exit(1);
+  }
   int counter = 0;
+  while(arrived_processes_added == false && counter < num_processes_arrived){
+    x[counter] = 0;
+    counter++;
+  }
   if (!(!working_process) == true){
     p = working_process;
     x[counter] = p->burst_time - p->remaining_time;
@@ -214,6 +233,9 @@ int calculateQuantum(bool medianMode, struct process_list* l, struct process* wo
   if (!m){
     m = 1;
   }
+  printf("m: %ld\n", m);
+
+  free(x);
   return m;
 }
 
@@ -242,7 +264,6 @@ main (int argc, char *argv[])
   long total_response_time = 0;
 
   /* Your code here */
-  // Key Assumption: Everything has already arrived
   struct process* p = NULL;
   for (int i = 0; i < ps.nprocesses; i++){
     struct process* p = &ps.process[i];
@@ -286,7 +307,7 @@ main (int argc, char *argv[])
     }
 
     if (p == NULL){
-      calculateQuantum(median_mode, &list, p, quantum_length);
+      quantum_length = calculateQuantum(median_mode, &list, p, num_processes_arrived, arrived_processes_added, quantum_length);
       p = TAILQ_FIRST(&list); // does this pop off?
       TAILQ_REMOVE(&list, p, pointers);
       if (p->start_exec_time == -1){
@@ -306,7 +327,7 @@ main (int argc, char *argv[])
         p = NULL;
       }
       else { // schedules a quantum
-        calculateQuantum(median_mode, &list, p, quantum_length);
+        quantum_length = calculateQuantum(median_mode, &list, p, num_processes_arrived, arrived_processes_added, quantum_length);
         quantum_left = quantum_length;
         p->remaining_time--;
         quantum_left--;
@@ -334,6 +355,7 @@ main (int argc, char *argv[])
     p = &ps.process[i];
     p->waiting_time = p->finish_time - p->arrival_time - p->burst_time;
     p->response_time = p->start_exec_time - p->arrival_time;
+    printf("%ld\t%ld\n", p->waiting_time, p->response_time);
   }
   // calculate average wait & response time
   for (int i = 0; i < ps.nprocesses; i++){
