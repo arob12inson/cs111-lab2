@@ -233,7 +233,7 @@ int calculateQuantum(bool medianMode,
   if (!m){
     m = 1;
   }
-  printf("m: %ld\n", m);
+  /* printf("m: %ld\n", m); */
 
   free(x);
   return m;
@@ -282,6 +282,7 @@ main (int argc, char *argv[])
   }
 
   while (TAILQ_EMPTY(&list) == false || p != NULL || num_arrived < ps.nprocesses){ // while theres still something left to process (in queue or CPU)
+    printf("time: %d\n", t);
     int num_processes_arrived = 0;
     bool arrived_processes_added = false;
     for (int i = 0; i < ps.nprocesses; i++) {
@@ -307,7 +308,7 @@ main (int argc, char *argv[])
     }
 
     if (p == NULL){
-      quantum_length = calculateQuantum(median_mode, &list, p, num_processes_arrived, arrived_processes_added, quantum_length);
+      /* quantum_length = calculateQuantum(median_mode, &list, p, num_processes_arrived, arrived_processes_added, quantum_length); */
       p = TAILQ_FIRST(&list); // does this pop off?
       TAILQ_REMOVE(&list, p, pointers);
       if (p->start_exec_time == -1){
@@ -316,15 +317,19 @@ main (int argc, char *argv[])
       quantum_left = quantum_length;
     }
 
+    printf("process %ld at time %d\n", p->pid, t);
+    printf("q: %ld \n", quantum_length);
     if (p->remaining_time == 0) { // if the process finishes
       p->finish_time = t;
       p = NULL;
+      quantum_length = calculateQuantum(median_mode, &list, p, num_processes_arrived, arrived_processes_added, quantum_length);
     } else if (quantum_left == 0) { // need a quantum switch
       // need to handle if queue is is empty
       if (TAILQ_EMPTY(&list) == false){ // quantum switch only if need to
         // seperate the last num_processes_arrived, then put them back in
         TAILQ_INSERT_TAIL(&list, p, pointers);
         p = NULL;
+        quantum_length = calculateQuantum(median_mode, &list, p, num_processes_arrived, arrived_processes_added, quantum_length);
       }
       else { // schedules a quantum
         quantum_length = calculateQuantum(median_mode, &list, p, num_processes_arrived, arrived_processes_added, quantum_length);
@@ -347,6 +352,7 @@ main (int argc, char *argv[])
       }
     }
     t++;
+    printf("\n");
 
   }
 
