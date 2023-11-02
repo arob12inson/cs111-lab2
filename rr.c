@@ -282,7 +282,6 @@ main (int argc, char *argv[])
   }
 
   while (TAILQ_EMPTY(&list) == false || p != NULL || num_arrived < ps.nprocesses){ // while theres still something left to process (in queue or CPU)
-    printf("time: %d\n", t);
     int num_processes_arrived = 0;
     bool arrived_processes_added = false;
     for (int i = 0; i < ps.nprocesses; i++) {
@@ -317,8 +316,6 @@ main (int argc, char *argv[])
       quantum_left = quantum_length;
     }
 
-    printf("process %ld at time %d\n", p->pid, t);
-    printf("q: %ld \n", quantum_length);
     if (p->remaining_time == 0) { // if the process finishes
       p->finish_time = t;
       p = NULL;
@@ -352,7 +349,6 @@ main (int argc, char *argv[])
       }
     }
     t++;
-    printf("\n");
 
   }
 
@@ -361,7 +357,6 @@ main (int argc, char *argv[])
     p = &ps.process[i];
     p->waiting_time = p->finish_time - p->arrival_time - p->burst_time;
     p->response_time = p->start_exec_time - p->arrival_time;
-    printf("%ld\t%ld\n", p->waiting_time, p->response_time);
   }
   // calculate average wait & response time
   for (int i = 0; i < ps.nprocesses; i++){
